@@ -1,0 +1,7 @@
+venv
+__pycache__
+*.txt
+*.docx
+*.csv
+*.mp3
+*.mp4
