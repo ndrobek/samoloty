@@ -1,9 +1,13 @@
 from django.urls import path
-from .views import AirplaneModelListCreateView, AirplaneModelDetailView, LowStockAirplaneModelsView, AirplaneModelsStartingWithView
+from .views import AirplaneModelListCreateView, AirplaneModelDetailView, LowStockAirplaneModelsView, AirplaneModelsStartingWithView, OrderListCreateView, OrderDetailView, RegisterUserView, register_user
 
 urlpatterns = [
     path('airplanes/', AirplaneModelListCreateView.as_view()),
     path('airplanes/<int:pk>/', AirplaneModelDetailView.as_view()),
     path('airplanes/low-stock/', LowStockAirplaneModelsView.as_view()),
     path('airplanes/starts-with/<str:letter>/', AirplaneModelsStartingWithView.as_view()),
+    path('register/', RegisterUserView.as_view()),
+    path('orders/', OrderListCreateView.as_view()),
+    path('orders/<int:pk>/', OrderDetailView.as_view()),
+    path('orders/my/', my_orders),
 ]
