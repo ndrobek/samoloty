@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from .models import AirplaneModel, PlushToy, OtherGadget, LuggageTag
+from django.contrib.auth.models import User
+from .models import AirplaneModel, PlushToy, LuggageTag, Order
+
 
 class AirplaneModelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,24 +43,6 @@ class PlushToySerializer(serializers.ModelSerializer):
 
 
 
-class OtherGadgetSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OtherGadget
-        fields = '__all__'
-        read_only_fields = ['id']
-
-    def validate(self, data):
-        material = data.get('material')
-        price = data.get('price')
-
-        if material == 'LT' and price < 100:
-            raise serializers.ValidationError(
-                "Akcesoria skórzane mają kosztować conajmniej 100 zł."
-            )
-        return data
-
-
-
 class LuggageTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = LuggageTag
@@ -71,3 +55,4 @@ class LuggageTagSerializer(serializers.ModelSerializer):
                 "Tekst na zawieszce musi być zapisany wielkimi literami."
             )
         return value
+

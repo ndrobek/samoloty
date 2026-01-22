@@ -1,5 +1,16 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
+from django.utils import timezone
+
+
+def clean(self):
+    if self.price <= 0:
+        raise ValidationError("Cena nie może być mniejsza niż 1!")
+    if self.stock < 0:
+        raise ValidationError("Stan magazynowy nie może być ujemny.")
+
+
 
 
 MODEL_SCALES = (
@@ -25,32 +36,6 @@ MANUFACTURERS = (
 )
 
 
-
-# Kubki itp.
-
-class Cup(models.Model):
-    CUP_TYPES = (
-        ('KK', 'Kubek'),
-        ('TS', 'Termos'),
-        ('BA', 'Butelka'),
-    )
-
-    capacity_ml = models.PositiveIntegerField()
-    material = models.CharField(max_length=2, choices=MATERIALS)
-    price = models.DecimalField(max_digits=8, decimal_places=2)
-    stock = models.PositiveIntegerField(default=0)
-
-    def clean(self):
-        if self.capacity_ml < 100:
-            raise ValidationError("Pojemność kubka musi być równa lub większa niż 100 ml.")
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.capacity_ml} ml"
-
 # Ubrania
 
 class Clothing(models.Model):
@@ -74,6 +59,18 @@ class Clothing(models.Model):
     price = models.DecimalField(max_digits=8, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
 
+    class Meta:
+        verbose_name = "Clothing"
+        verbose_name_plural = "Clothing"
+
+    def clean(self):
+        if self.price <= 0:
+            raise ValidationError("Cena nie może być mniejsza niż 1!")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)    
+
     def __str__(self):
         return f"{self.name} ({self.size})"
 
@@ -95,6 +92,9 @@ class AirplaneModel(models.Model):
             raise ValidationError(
                 "Modele w skali 1:400 nie mogą być wykonane z plastiku."
             )
+        if self.price <= 0:
+            raise ValidationError("Cena nie może być mniejsza niż 1!")        
+
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
@@ -107,9 +107,17 @@ class PlushToy(models.Model):
     name = models.CharField(max_length=100)
     character = models.CharField(max_length=100, help_text="Przykładowo: samolot, pilot, stewardessa")
     manufacturer = models.CharField(max_length=2, choices=MANUFACTURERS)
-    material = models.CharField(max_length=2, choices=MATERIALS, default='TX')
+    material = models.CharField(max_length=2, choices=MATERIALS, default='PH')
     price = models.DecimalField(max_digits=8, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
+
+    def clean(self):
+        if self.price <= 0:
+            raise ValidationError("Cena nie może być mniejsza niż 1!")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -124,21 +132,39 @@ class LuggageTag(models.Model):
     price = models.DecimalField(max_digits=8, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
 
-    def __str__(self):
-        return self.name
+    def clean(self):
+        if self.price <= 0:
+            raise ValidationError("Cena nie może być mniejsza niż 1!")
 
-
-
-
-# Inne (miscellaneous akcesoria)
-
-class OtherGadget(models.Model):
-    name = models.CharField(max_length=100)
-    accessory_type = models.CharField(max_length=100, help_text="Przykładowo: plecak, torba, portfel")
-    manufacturer = models.CharField(max_length=2, choices=MANUFACTURERS)
-    material = models.CharField(max_length=2, choices=MATERIALS)
-    price = models.DecimalField(max_digits=8, decimal_places=2)
-    stock = models.PositiveIntegerField(default=0)
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
+
+
+class Order(models.Model):
+    STATUS_CHOICES = (
+        ('NEW', 'New'),
+        ('PAID', 'Paid'),
+        ('SHIPPED', 'Shipped'),
+        ('CANCELLED', 'Cancelled'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
+    airplane_model = models.ForeignKey(AirplaneModel, on_delete=models.CASCADE, null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=1) 
+    created_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='NEW')
+
+    def clean(self):
+        if self.quantity <= 0:
+            raise ValidationError("Ilość nie może być mniejsza niż 1!")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Order #{self.id} ({self.user.username})"
