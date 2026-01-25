@@ -1,12 +1,12 @@
 from django.shortcuts import render
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
 from .models import AirplaneModel, PlushToy, LuggageTag, Order
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, SAFE_METHODS
-from .serializers import AirplaneModelSerializer, PlushToySerializer, LuggageTagSerializer, OrderSerializer, RegisterSerializer
+from .serializers import AirplaneModelSerializer, PlushToySerializer, LuggageTagSerializer, OrderSerializer
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
@@ -59,13 +59,6 @@ class OrderListCreateView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-    def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
 
 
 class OrderDetailView(RetrieveUpdateDestroyAPIView):
@@ -165,7 +158,7 @@ def my_orders(request):
 # Zestawienie miesięczne
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdminUser])
 def monthly_orders_summary(request):
     data = (
         Order.objects
