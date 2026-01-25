@@ -11,20 +11,26 @@ def clean(self):
         raise ValidationError("Stan magazynowy nie może być ujemny.")
 
 
+def validate_capitalized(value):
+    if not value:
+        raise ValidationError("Pole nie może być puste!")
+    if not value[0].isupper():
+        raise ValidationError("Pole musi zaczynać się od WIELKIEJ LITERY!")
 
 
-MODEL_SCALES = (
-    ('1:72', 'Skala 1:72'),
-    ('1:144', 'Skala 1:144'),
-    ('1:200', 'Skala 1:200'),
-    ('1:400', 'Skala 1:400'),
-)
 
 MATERIALS = (
-    ('PC', 'Plastik'),
+    ('PC', 'Plastic'),
     ('ML', 'Metal'),
-    ('PH', 'Plusz'),
-    ('LR', 'Skóra'),
+    ('PH', 'Plush'),
+    ('LR', 'Leather'),
+)
+
+CLOTHING_MATERIALS = (
+    ('CN', 'Cotton'),
+    ('PR', 'Polyester'),
+    ('AC', 'Acrylic'),
+    ('WL', 'Wool'),
 )
 
 MANUFACTURERS = (
@@ -35,6 +41,32 @@ MANUFACTURERS = (
     ('OT', 'Other'),
 )
 
+# Modele samolotów
+
+MODEL_SCALES = (
+    ('1:72', 'Scale 1:72'),
+    ('1:144', 'Scale 1:144'),
+    ('1:200', 'Scale 1:200'),
+    ('1:400', 'Scale 1:400'),
+)
+
+AIRPLANE_MODEL_MATERIALS = (
+    ('PC', 'Plastic'),
+    ('ML', 'Metal'),
+)
+
+AIRPLANE_MODEL_MANUFACTURERS = (
+    ('BO', 'Boeing'),
+    ('AI', 'Airbus'),
+    ('EM', 'Embraer'),
+    ('CS', 'Cessna'),
+)
+
+class ClothingMaterial(models.Model):
+    code = models.CharField(max_length=2, choices=CLOTHING_MATERIALS, unique=True)
+
+    def __str__(self):
+        return self.get_code_display()
 
 # Ubrania
 
@@ -52,10 +84,10 @@ class Clothing(models.Model):
         ('XL', 'Extra Large'),
     )
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, validators=[validate_capitalized])
     clothing_type = models.CharField(max_length=2, choices=CLOTHING_TYPES)
-    size = models.CharField(max_length=2, choices=SIZES)
-    material = models.CharField(max_length=2, choices=MATERIALS)
+    size = models.CharField(max_length=2, choices=SIZES, blank=True, null=True)
+    material = models.ManyToManyField(ClothingMaterial, blank=True)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
 
@@ -64,6 +96,8 @@ class Clothing(models.Model):
         verbose_name_plural = "Clothing"
 
     def clean(self):
+        if self.clothing_type == 'CP' and self.size:
+            raise ValidationError("Czapka ma rozmiar uniwersalny.")        
         if self.price <= 0:
             raise ValidationError("Cena nie może być mniejsza niż 1!")
 
@@ -80,11 +114,11 @@ class Clothing(models.Model):
 # Model samolotu
 
 class AirplaneModel(models.Model):
-    name = models.CharField(max_length=100)
-    aircraft_type = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, validators=[validate_capitalized])
+    aircraft_type = models.CharField(max_length=100, validators=[validate_capitalized])
     scale = models.CharField(max_length=10, choices=MODEL_SCALES)
-    manufacturer = models.CharField(max_length=2, choices=MANUFACTURERS)
-    material = models.CharField(max_length=2, choices=MATERIALS)
+    manufacturer = models.CharField(max_length=2, choices=AIRPLANE_MODEL_MANUFACTURERS)
+    material = models.CharField(max_length=2, choices=AIRPLANE_MODEL_MATERIALS)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
     def clean(self):
@@ -104,14 +138,16 @@ class AirplaneModel(models.Model):
 
 # Pluszowe samoloty :)
 class PlushToy(models.Model):
-    name = models.CharField(max_length=100)
-    character = models.CharField(max_length=100, help_text="Przykładowo: samolot, pilot, stewardessa")
+    name = models.CharField(max_length=100, validators=[validate_capitalized],)
+    character = models.CharField(max_length=100, help_text="Przykładowo: samolot, pilot, stewardessa", validators=[validate_capitalized],)
     manufacturer = models.CharField(max_length=2, choices=MANUFACTURERS)
-    material = models.CharField(max_length=2, choices=MATERIALS, default='PH')
+    material = models.CharField(max_length=2, choices=MATERIALS, default='PH', editable=False)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
 
     def clean(self):
+        if self.material != 'PH':
+            raise ValidationError("Materiałem, z którego jest zrobiony pluszak musi być PLUSZ.")
         if self.price <= 0:
             raise ValidationError("Cena nie może być mniejsza niż 1!")
 
@@ -125,7 +161,7 @@ class PlushToy(models.Model):
 # Zawieszki na walizkę
 
 class LuggageTag(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, validators=[validate_capitalized])
     design = models.CharField(max_length=100, help_text="Przykładowo: BOEING LOGO, CALL SIGN")
     manufacturer = models.CharField(max_length=2,choices=MANUFACTURERS)
     material = models.CharField(max_length=2, choices=MATERIALS)
@@ -133,6 +169,8 @@ class LuggageTag(models.Model):
     stock = models.PositiveIntegerField(default=0)
 
     def clean(self):
+        if self.design != self.design.upper():
+            raise ValidationError("Tekst musi być napisany WIELKIMI LITERAMI.")
         if self.price <= 0:
             raise ValidationError("Cena nie może być mniejsza niż 1!")
 

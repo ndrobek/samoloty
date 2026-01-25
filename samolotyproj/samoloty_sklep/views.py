@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, SAFE_METHOD
 from .serializers import AirplaneModelSerializer, PlushToySerializer, LuggageTagSerializer, OrderSerializer
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from .permissions import IsOrderOwner
 from django.contrib.auth.models import User
 from django.db.models.functions import TruncMonth
 from django.db.models import Count
@@ -63,10 +64,9 @@ class OrderListCreateView(ListCreateAPIView):
 
 class OrderDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOrderOwner]
+    queryset = Order.objects.all()
 
-    def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
     
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
