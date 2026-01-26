@@ -10,4 +10,4 @@ admin.site.register(Order)
 admin.site.register(ClothingMaterial)
 @admin.register(Clothing)
 class ClothingAdmin(admin.ModelAdmin):
-    filter_horizontal = ("material")
+    filter_horizontal = ("material",)

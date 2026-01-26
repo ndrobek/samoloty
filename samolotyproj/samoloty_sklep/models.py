@@ -6,32 +6,18 @@ from django.utils import timezone
 
 def clean(self):
     if self.price <= 0:
-        raise ValidationError("Cena nie może być mniejsza niż 1!")
+        raise ValidationError("Price cannot be less than 1!")
     if self.stock < 0:
-        raise ValidationError("Stan magazynowy nie może być ujemny.")
+        raise ValidationError("Stock cannot be negative.")
 
 
 def validate_capitalized(value):
     if not value:
-        raise ValidationError("Pole nie może być puste!")
+        raise ValidationError("Field cannot be empty!")
     if not value[0].isupper():
-        raise ValidationError("Pole musi zaczynać się od WIELKIEJ LITERY!")
+        raise ValidationError("Entry has to start with an UPPERCASE LETTER!")
 
 
-
-MATERIALS = (
-    ('PC', 'Plastic'),
-    ('ML', 'Metal'),
-    ('PH', 'Plush'),
-    ('LR', 'Leather'),
-)
-
-CLOTHING_MATERIALS = (
-    ('CN', 'Cotton'),
-    ('PR', 'Polyester'),
-    ('AC', 'Acrylic'),
-    ('WL', 'Wool'),
-)
 
 MANUFACTURERS = (
     ('BO', 'Boeing'),
@@ -41,7 +27,33 @@ MANUFACTURERS = (
     ('OT', 'Other'),
 )
 
-# Modele samolotów
+MATERIALS = (
+    ('PC', 'Plastic'),
+    ('ML', 'Metal'),
+    ('PH', 'Plush'),
+    ('LR', 'Leather'),
+)
+
+
+
+# TYLKO ubrania
+
+CLOTHING_MATERIALS = (
+    ('CN', 'Cotton'),
+    ('PR', 'Polyester'),
+    ('AC', 'Acrylic'),
+    ('WL', 'Wool'),
+)
+
+class ClothingMaterial(models.Model):
+    code = models.CharField(max_length=2, choices=CLOTHING_MATERIALS, unique=True)
+
+    def __str__(self):
+        return self.get_code_display()
+    
+
+
+#TYLKO modele samolotów
 
 MODEL_SCALES = (
     ('1:72', 'Scale 1:72'),
@@ -62,13 +74,8 @@ AIRPLANE_MODEL_MANUFACTURERS = (
     ('CS', 'Cessna'),
 )
 
-class ClothingMaterial(models.Model):
-    code = models.CharField(max_length=2, choices=CLOTHING_MATERIALS, unique=True)
 
-    def __str__(self):
-        return self.get_code_display()
 
-# Ubrania
 
 class Clothing(models.Model):
     CLOTHING_TYPES = (
@@ -97,9 +104,9 @@ class Clothing(models.Model):
 
     def clean(self):
         if self.clothing_type == 'CP' and self.size:
-            raise ValidationError("Czapka ma rozmiar uniwersalny.")        
+            raise ValidationError("Caps have a universal size.")        
         if self.price <= 0:
-            raise ValidationError("Cena nie może być mniejsza niż 1!")
+            raise ValidationError("Price cannot be less than 1!")
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -109,9 +116,6 @@ class Clothing(models.Model):
         return f"{self.name} ({self.size})"
 
 
-
-
-# Model samolotu
 
 class AirplaneModel(models.Model):
     name = models.CharField(max_length=100, validators=[validate_capitalized])
@@ -124,10 +128,10 @@ class AirplaneModel(models.Model):
     def clean(self):
         if self.scale == '1:400' and self.material == 'PC':
             raise ValidationError(
-                "Modele w skali 1:400 nie mogą być wykonane z plastiku."
+                "1:400 scaled models cannot be made of plastic."
             )
         if self.price <= 0:
-            raise ValidationError("Cena nie może być mniejsza niż 1!")        
+            raise ValidationError("Price cannot be less than 1!")        
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -136,10 +140,10 @@ class AirplaneModel(models.Model):
         return f"{self.name} ({self.scale})"
 
 
-# Pluszowe samoloty :)
+
 class PlushToy(models.Model):
     name = models.CharField(max_length=100, validators=[validate_capitalized],)
-    character = models.CharField(max_length=100, help_text="Przykładowo: samolot, pilot, stewardessa", validators=[validate_capitalized],)
+    character = models.CharField(max_length=100, help_text="E.G.: plane, pilot, stewardess", validators=[validate_capitalized],)
     manufacturer = models.CharField(max_length=2, choices=MANUFACTURERS)
     material = models.CharField(max_length=2, choices=MATERIALS, default='PH', editable=False)
     price = models.DecimalField(max_digits=8, decimal_places=2)
@@ -147,9 +151,9 @@ class PlushToy(models.Model):
 
     def clean(self):
         if self.material != 'PH':
-            raise ValidationError("Materiałem, z którego jest zrobiony pluszak musi być PLUSZ.")
+            raise ValidationError("A plush toy has to be made of the material PLUSH.")
         if self.price <= 0:
-            raise ValidationError("Cena nie może być mniejsza niż 1!")
+            raise ValidationError("Price cannot be less than 1!")
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -158,11 +162,11 @@ class PlushToy(models.Model):
     def __str__(self):
         return self.name
 
-# Zawieszki na walizkę
+
 
 class LuggageTag(models.Model):
     name = models.CharField(max_length=100, validators=[validate_capitalized])
-    design = models.CharField(max_length=100, help_text="Przykładowo: BOEING LOGO, CALL SIGN")
+    design = models.CharField(max_length=100, help_text="E.G.: BOEING LOGO, CALL SIGN")
     manufacturer = models.CharField(max_length=2,choices=MANUFACTURERS)
     material = models.CharField(max_length=2, choices=MATERIALS)
     price = models.DecimalField(max_digits=8, decimal_places=2)
@@ -170,9 +174,9 @@ class LuggageTag(models.Model):
 
     def clean(self):
         if self.design != self.design.upper():
-            raise ValidationError("Tekst musi być napisany WIELKIMI LITERAMI.")
+            raise ValidationError("The design has to be written in UPPERCASE LETTERS")
         if self.price <= 0:
-            raise ValidationError("Cena nie może być mniejsza niż 1!")
+            raise ValidationError("Price cannot be less than 1!")
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -180,6 +184,7 @@ class LuggageTag(models.Model):
 
     def __str__(self):
         return self.name
+
 
 
 class Order(models.Model):
@@ -198,7 +203,7 @@ class Order(models.Model):
 
     def clean(self):
         if self.quantity <= 0:
-            raise ValidationError("Ilość nie może być mniejsza niż 1!")
+            raise ValidationError("Quantity cannot be less than 1!")
 
     def save(self, *args, **kwargs):
         self.full_clean()

@@ -12,7 +12,7 @@ class AirplaneModelSerializer(serializers.ModelSerializer):
     def validate_price(self, value):
         if value <= 0:
             raise serializers.ValidationError(
-                "Cena musi być większa od 0."
+                "Price has to be greater than 0!"
             )
         return value
 
@@ -22,10 +22,9 @@ class AirplaneModelSerializer(serializers.ModelSerializer):
 
         if scale == '1:400' and material == 'PC':
             raise serializers.ValidationError(
-                "Modele 1:400 nie mogą być wykonane z plastiku."
+                "1:400 scaled models cannot be made of plastic."
             )
         return data
-
 
 
 class PlushToySerializer(serializers.ModelSerializer):
@@ -37,10 +36,9 @@ class PlushToySerializer(serializers.ModelSerializer):
     def validate_price(self, value):
         if value < 10:
             raise serializers.ValidationError(
-                "Cena pluszaka ma wynosić conajmniej 10 zł."
+                "The price of a plush has to be at least 10."
             )
         return value
-
 
 
 class LuggageTagSerializer(serializers.ModelSerializer):
@@ -52,7 +50,7 @@ class LuggageTagSerializer(serializers.ModelSerializer):
     def validate_design(self, value):
         if value != value.upper():
             raise serializers.ValidationError(
-                "Tekst na zawieszce musi być zapisany wielkimi literami."
+                "The design has to be in UPPERCASE LETTERS"
             )
         return value
 

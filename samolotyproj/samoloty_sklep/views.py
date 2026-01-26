@@ -13,6 +13,8 @@ from .permissions import IsOrderOwner
 from django.contrib.auth.models import User
 from django.db.models.functions import TruncMonth
 from django.db.models import Count
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
 
 
 
@@ -32,8 +34,6 @@ class AirplaneModelDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method in SAFE_METHODS:
             return []
         return [IsAdminUser()]
-
-
 
 
 class LowStockAirplaneModelsView(APIView):
@@ -63,59 +63,9 @@ class OrderListCreateView(ListCreateAPIView):
 
 
 class OrderDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated, IsOrderOwner]
-    queryset = Order.objects.all()
-
-    
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-def order_delete(request, pk):
-    try:
-        order = Order.objects.get(pk=pk)
-    except Order.DoesNotExist:
-        return Response(status=404)
-
-    if order.user != request.user and not request.user.is_staff:
-        return Response(
-            {"detail": "Nie masz uprawnień do usunięcia tego zamówienia!!"},
-            status=403
-        )
-
-    order.delete()
-    return Response(status=204)
-
-
-
-class RegisterUserView(APIView):
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        password2 = request.data.get('password2')
-
-        if not username or not password:
-            return Response(
-                {"error": "Wymagane są nazwa użytkownika oraz hasło."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if password != password2:
-            return Response(
-                {"error": "Hasło jest błędne."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if User.objects.filter(username=username).exists():
-            return Response(
-                {"error": "Taki użytkownik już istnieje."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user = User.objects.create_user(username=username, password=password)
-        return Response(
-            {"message": "Utworzono użytkownika :)."},
-            status=status.HTTP_201_CREATED
-        )
 
 
 class LuggageTagListCreateView(ListCreateAPIView):
@@ -144,8 +94,77 @@ class PlushToyDetailView(RetrieveUpdateDestroyAPIView):
 
 
 
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def order_delete(request, pk):
+    try:
+        order = Order.objects.get(pk=pk)
+    except Order.DoesNotExist:
+        return Response(status=404)
 
-# Lista zamówień danego użytkownika (aktualnie zalogowanego)
+    if order.user != request.user and not request.user.is_staff:
+        return Response(
+            {"detail": "You don't have the rights to delete this order!"},
+            status=403
+        )
+
+    order.delete()
+    return Response(status=204)
+
+
+
+
+class RegisterUserView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        password2 = request.data.get('password2')
+
+        if not username or not password:
+            return Response(
+                {"error": "Username and password required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if password != password2:
+            return Response(
+                {"error": "The password is incorrect."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {"error": "This user already exists/The username is taken."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = User.objects.create_user(username=username, password=password)
+        return Response(
+            {"message": "User created :)."},
+            status=status.HTTP_201_CREATED
+        )
+
+
+class TokenLoginView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        user = authenticate(username=username, password=password)
+        if not user:
+            return Response(
+                {"error": "Incorrect data."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        token, _ = Token.objects.get_or_create(user=user)
+
+        return Response({
+            "token": token.key
+        })
+    
+
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -153,9 +172,6 @@ def my_orders(request):
     orders = Order.objects.filter(user=request.user)
     serializer = OrderSerializer(orders, many=True)
     return Response(serializer.data)
-
-
-# Zestawienie miesięczne
 
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
